@@ -1,3 +1,4 @@
+
 import argparse
 import PIL.Image
 import numpy as np
@@ -102,10 +103,11 @@ def run(args):
     #clip values between bottom_clamp and 1
     bottom_clamp = min(max(args.bottom_clamp,0.), 0.999)
     consistency_map = consistency_map.clip(bottom_clamp, 1)
-    np.save(args.output, consistency_map)
+    out_fname = args.output+flow_fwd.split('/')[-1]+'_cc'
+    np.save(out_fname, consistency_map)
 
     #save as jpeg 
     if args.image_output:
-      PIL.Image.fromarray((consistency_map*255.).astype('uint8')).save(args.output+'.jpg')
+      PIL.Image.fromarray((consistency_map*255.).astype('uint8')).save(out_fname+'.jpg')
 
 run(args)
