@@ -78,6 +78,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--flow_fwd", type=str, required=True, help="Forward flow path or glob pattern")
 parser.add_argument("--flow_bwd", type=str, required=True, help="Backward flow path or glob pattern")
 parser.add_argument("--output", type=str, required=True, help="Output consistency map path")
+parser.add_argument("--output_postfix", type=str, default='_cc', help="Output consistency map name postfix")
 parser.add_argument("--image_output", action='store_true', help="Output consistency map as b\w image path")
 parser.add_argument("--blur", type=float, default=2., help="Gaussian blur kernel size (0 for no blur)")
 parser.add_argument("--bottom_clamp", type=float, default=0., help="Clamp lower values")
@@ -103,7 +104,7 @@ def run(args):
     #clip values between bottom_clamp and 1
     bottom_clamp = min(max(args.bottom_clamp,0.), 0.999)
     consistency_map = consistency_map.clip(bottom_clamp, 1)
-    out_fname = args.output+flow_fwd.split('/')[-1]+'_cc'
+    out_fname = args.output+flow_fwd.split('/')[-1][:-4]+args.output_postfix
     np.save(out_fname, consistency_map)
 
     #save as jpeg 
