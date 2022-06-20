@@ -3,14 +3,6 @@ import argparse
 import PIL.Image
 import numpy as np
 import scipy.ndimage
-import torch
-from torch.nn.functional import grid_sample
-
-def sample(tensor, uv):
-      height, width = tensor.shape[-2:]
-      max_pos = torch.tensor([width - 1, height - 1], device=tensor.device).view(2, 1, 1)
-      grid = uv.div(max_pos / 2).sub(1).movedim(0, -1).unsqueeze(0)
-      return grid_sample(tensor.unsqueeze(0), grid, align_corners=True).squeeze(0)
 
 def make_consistency(flow1, flow2, edges_unreliable=False):
       # Awesome pythonic consistency check from [maua](https://github.com/maua-maua-maua/maua/blob/44485c745c65cf9d83cb1b1c792a177588e9c9fc/maua/flow/consistency.py) by Hans Brouwer and Henry Rachootin
@@ -81,9 +73,9 @@ def make_consistency(flow1, flow2, edges_unreliable=False):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--flow_fwd", type=str, help="Forward flow path")
-parser.add_argument("--flow_bwd", type=str, help="Backward flow path")
-parser.add_argument("--output", type=str, help="Output consistency map path")
+parser.add_argument("--flow_fwd", type=str, required=True, help="Forward flow path")
+parser.add_argument("--flow_bwd", type=str, required=True, help="Backward flow path")
+parser.add_argument("--output", type=str, required=True, help="Output consistency map path")
 parser.add_argument("--image_output", action='store_true', help="Output consistency map as b\w image path")
 parser.add_argument("--blur", type=float, default=2., help="Gaussian blur kernel size (0 for no blur)")
 parser.add_argument("--bottom_clamp", type=float, default=0., help="Clamp lower values")
@@ -107,6 +99,5 @@ def run(args):
   #save as jpeg 
   if args.image_output:
     PIL.Image.fromarray((consistency_map*255.).astype('uint8')).save(args.output+'.jpg')
-
 
 run(args)
