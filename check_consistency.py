@@ -1,8 +1,9 @@
-
 import argparse
 import PIL.Image
 import numpy as np
 import scipy.ndimage
+import glob
+from tqdm import tqdm
 
 def make_consistency(flow1, flow2, edges_unreliable=False):
       # Awesome pythonic consistency check from [maua](https://github.com/maua-maua-maua/maua/blob/44485c745c65cf9d83cb1b1c792a177588e9c9fc/maua/flow/consistency.py) by Hans Brouwer and Henry Rachootin
@@ -73,8 +74,8 @@ def make_consistency(flow1, flow2, edges_unreliable=False):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--flow_fwd", type=str, required=True, help="Forward flow path")
-parser.add_argument("--flow_bwd", type=str, required=True, help="Backward flow path")
+parser.add_argument("--flow_fwd", type=str, required=True, help="Forward flow path or glob pattern")
+parser.add_argument("--flow_bwd", type=str, required=True, help="Backward flow path or glob pattern")
 parser.add_argument("--output", type=str, required=True, help="Output consistency map path")
 parser.add_argument("--image_output", action='store_true', help="Output consistency map as b\w image path")
 parser.add_argument("--blur", type=float, default=2., help="Gaussian blur kernel size (0 for no blur)")
@@ -83,21 +84,28 @@ parser.add_argument("--edges_reliable", action='store_true', help="Consider edge
 args = parser.parse_args()
 
 def run(args):
-  flow1 = np.load(args.flow_fwd)
-  flow2 = np.load(args.flow_bwd)
-  consistency_map = make_consistency(flow1, flow2, edges_unreliable=not args.edges_reliable)
+  flow_fwd_many = sorted(glob.glob(args.flow_fwd))
+  flow_bwd_many = sorted(glob.glob(args.flow_bwd))
+  if len(flow_fwd_many)!= len(flow_bwd_many): 
+    raise Exception('Forward and backward flow file numbers don`t match')
+    return
+  
+  for flow_fwd,flow_bwd in tqdm(zip(glob.glob(args.flow_fwd), glob.glob(args.flow_bwd))):
+    flow1 = np.load(flow_fwd)
+    flow2 = np.load(flow_bwd)
+    consistency_map = make_consistency(flow1, flow2, edges_unreliable=not args.edges_reliable)
 
-  # blur
-  if args.blur>0.:
-    consistency_map = scipy.ndimage.gaussian_filter(consistency_map, [3, 3])
+    # blur
+    if args.blur>0.:
+      consistency_map = scipy.ndimage.gaussian_filter(consistency_map, [args.blur, args.blur])
 
-  #clip values between bottom_clamp and 1
-  bottom_clamp = min(max(args.bottom_clamp,0.), 0.999)
-  consistency_map = consistency_map.clip(bottom_clamp, 1)
-  np.save(args.output, consistency_map)
+    #clip values between bottom_clamp and 1
+    bottom_clamp = min(max(args.bottom_clamp,0.), 0.999)
+    consistency_map = consistency_map.clip(bottom_clamp, 1)
+    np.save(args.output, consistency_map)
 
-  #save as jpeg 
-  if args.image_output:
-    PIL.Image.fromarray((consistency_map*255.).astype('uint8')).save(args.output+'.jpg')
+    #save as jpeg 
+    if args.image_output:
+      PIL.Image.fromarray((consistency_map*255.).astype('uint8')).save(args.output+'.jpg')
 
 run(args)
