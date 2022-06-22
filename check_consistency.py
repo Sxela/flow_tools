@@ -92,7 +92,7 @@ def run(args):
     raise Exception('Forward and backward flow file numbers don`t match')
     return
   
-  for flow_fwd,flow_bwd in tqdm(zip(glob.glob(args.flow_fwd), glob.glob(args.flow_bwd))):
+  for flow_fwd,flow_bwd in tqdm(zip(flow_fwd_many, flow_bwd_many)):
     flow1 = np.load(flow_fwd)
     flow2 = np.load(flow_bwd)
     consistency_map = make_consistency(flow1, flow2, edges_unreliable=not args.edges_reliable)
@@ -104,7 +104,7 @@ def run(args):
     #clip values between bottom_clamp and 1
     bottom_clamp = min(max(args.bottom_clamp,0.), 0.999)
     consistency_map = consistency_map.clip(bottom_clamp, 1)
-    out_fname = args.output+flow_fwd.split('/')[-1][:-4]+args.output_postfix
+    out_fname = args.output+'/'+flow_fwd.split('/')[-1][:-4]+args.output_postfix
     np.save(out_fname, consistency_map)
 
     #save as jpeg 
